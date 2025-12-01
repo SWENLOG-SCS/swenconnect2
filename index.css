@@ -1,7 +1,6 @@
-/* 
-  Tailwind directives removed to support CDN usage in index.html.
-  This ensures the CSS is valid even without a PostCSS build step.
-*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html, body, #root {
   height: 100%;
