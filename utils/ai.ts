@@ -2,10 +2,16 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { Port } from "../types";
 
-// Initialize Gemini
-// Note: In a production Vite app, this would usually be import.meta.env.VITE_API_KEY, 
-// but we adhere to the instruction to use process.env.API_KEY directly.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize Gemini lazily to avoid errors when API key is missing
+// In Vite, use import.meta.env.VITE_API_KEY
+const getAI = () => {
+  const apiKey = import.meta.env.VITE_API_KEY;
+  if (!apiKey) {
+    console.warn("Google AI API key not set. AI features will be disabled.");
+    return null;
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 /**
  * Uses Gemini to map a natural language query (e.g. "Chicago to Shanghai") 
@@ -15,7 +21,7 @@ export const parseShippingIntent = async (
   query: string,
   availablePorts: Port[]
 ): Promise<{ originId: string | null; destinationId: string | null; error?: string }> => {
-  
+
   // Create a simplified map of ports for the context window to save tokens
   const portContext = availablePorts.map(p => ({
     id: p.id,
@@ -47,6 +53,11 @@ export const parseShippingIntent = async (
   };
 
   try {
+    const ai = getAI();
+    if (!ai) {
+      return { originId: null, destinationId: null, error: "AI features are disabled. API key not configured." };
+    }
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `User Query: "${query}"\n\nAvailable Ports: ${JSON.stringify(portContext)}`,
@@ -60,7 +71,7 @@ export const parseShippingIntent = async (
 
     const text = response.text;
     if (!text) throw new Error("No response from AI");
-    
+
     return JSON.parse(text);
   } catch (error) {
     console.error("AI Parse Error:", error);
@@ -71,8 +82,13 @@ export const parseShippingIntent = async (
 /**
  * Uses Gemini with Google Search Grounding to find real-time status/risks for a port.
  */
-export const getPortInsights = async (port: Port): Promise<{ summary: string; sources: {title: string, uri: string}[] }> => {
+export const getPortInsights = async (port: Port): Promise<{ summary: string; sources: { title: string, uri: string }[] }> => {
   try {
+    const ai = getAI();
+    if (!ai) {
+      return { summary: "AI insights are disabled. API key not configured.", sources: [] };
+    }
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash', // Flash is sufficient for search summarization
       contents: `Find recent logistics news, port congestion status, weather alerts, or labor strike updates for the ${port.name} (${port.code}) in ${port.country}. Summarize the current operational status and any risks in 3 bullet points.`,
@@ -83,7 +99,7 @@ export const getPortInsights = async (port: Port): Promise<{ summary: string; so
     });
 
     const text = response.text || "No insights available.";
-    
+
     // Extract grounding metadata if available
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const sources = chunks
