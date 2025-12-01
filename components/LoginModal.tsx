@@ -9,7 +9,7 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ users, onLogin, onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,13 +19,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ users, onLogin, onClose }) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
-    
+
     try {
-        await onLogin({ username, password });
-        // onClose is called by parent on success
+      await onLogin({ username, password });
+      // onClose is called by parent on success
     } catch (err) {
-        setError('Invalid username or password');
-        setIsSubmitting(false);
+      setError('Invalid username or password');
+      setIsSubmitting(false);
     }
   };
 
@@ -42,14 +42,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ users, onLogin, onClose }) => {
           <h2 className="text-xl font-bold text-white">Welcome Back</h2>
           <p className="text-slate-400 text-sm">Sign in to access management tools</p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-6 pt-8 space-y-4">
           {error && (
             <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 text-center">
               {error}
             </div>
           )}
-          
+
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase ml-1">Username</label>
             <div className="relative">
